@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Panel · Proteína</title>
+<style>
+:root{--bg:#07090b;--card:#12171b;--line:#2a3238;--silver:#d5dadd;--teal:#0fb5b5;--gold:#e3a72f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--silver);font-family:system-ui,sans-serif;padding:16px}
+.wrap{max-width:820px;margin:auto}h1,h2{color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-size:16px}
+input,textarea{width:100%;background:var(--card);border:1px solid var(--line);color:var(--silver);padding:10px;border-radius:10px;font-size:16px;font-family:inherit}
+label{font-size:12px;color:#8d979d;display:block;margin:8px 0 3px}
+.row{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}
+button{background:linear-gradient(135deg,var(--teal),#0a7f84);color:#fff;border:0;padding:12px 16px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer}
+button.x{background:#3a1d1d;color:#ff9b9b}button.m{background:#222c32;width:44px}
+.st{display:flex;gap:6px;align-items:center}.st input{text-align:center}
+.save{position:sticky;bottom:10px;display:flex;gap:10px;align-items:center;background:#07090bf0;padding:10px 0}
+#msg{font-size:14px}
+</style></head><body><div class="wrap">
+<h1>Panel Proteína</h1>
+<div id="login"><label>Contraseña</label><input type="password" id="pw"><br><br><button onclick="enter()">Entrar</button></div>
+<div id="app" hidden>
+<h2>Productos</h2><div id="list"></div>
+<button onclick="add()">+ Agregar producto</button>
+<h2>Sobre nosotros</h2><textarea id="about" rows="4"></textarea>
+<h2>Información (horarios, dirección, etc.)</h2><textarea id="info" rows="4"></textarea>
+<label>WhatsApp para pedidos (con 549 y sin +)</label><input id="wa" inputmode="numeric">
+<div class="save"><button onclick="save()">Guardar cambios</button><span id="msg"></span></div>
+</div></div>
+<script>
+let D,pw='';const $=id=>document.getElementById(id);
+async function enter(){pw=$('pw').value;D=await (await fetch('/api/data')).json();$('login').hidden=true;$('app').hidden=false;
+$('about').value=D.about||'';$('info').value=D.info||'';$('wa').value=D.whatsapp||'';draw()}
+function draw(){const L=$('list');L.replaceChildren();D.products.forEach((p,i)=>{
+ const r=document.createElement('div');r.className='row';
+ r.innerHTML=`<div class="g"><div class="full"><label>Nombre</label><input data-k="name"></div>
+ <div><label>Sección (ej: Proteínas)</label><input data-k="cat"></div><div><label>Precio ($)</label><input data-k="price" type="number" inputmode="numeric"></div>
+ <div><label>Stock</label><div class="st"><button class="m" data-d="-1">−</button><input data-k="stock" type="number" inputmode="numeric"><button class="m" data-d="1">+</button></div></div>
+ <div><label>Link de foto (opcional)</label><input data-k="img"></div>
+ <div class="full"><button class="x" data-del>Eliminar producto</button></div></div>`;
+ r.querySelectorAll('[data-k]').forEach(e=>{e.value=p[e.dataset.k]??'';e.oninput=()=>{p[e.dataset.k]=e.type==='number'?Number(e.value):e.value}});
+ r.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{p.stock=Math.max(0,(p.stock||0)+Number(b.dataset.d));r.querySelector('[data-k=stock]').value=p.stock});
+ r.querySelector('[data-del]').onclick=()=>{if(confirm('¿Eliminar "'+p.name+'"?')){D.products.splice(i,1);draw()}};
+ L.append(r)})}
+function add(){D.products.push({id:'p'+Date.now(),name:'',cat:'',price:0,stock:0,img:''});draw();window.scrollTo(0,document.body.scrollHeight)}
+async function save(){D.about=$('about').value;D.info=$('info').value;D.whatsapp=$('wa').value.trim();
+ $('msg').textContent='Guardando…';
+ const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':pw},body:JSON.stringify(D)});
+ const j=await r.json();$('msg').textContent=r.ok?'✓ Guardado':'✗ '+(j.error||'Error')}
+</script></body></html>

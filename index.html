@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proteína · Nutrición · Rendimiento</title>
+<style>
+:root{--bg:#07090b;--card:#12171b;--line:#2a3238;--silver:#d5dadd;--mute:#8d979d;--teal:#0fb5b5;--gold:#e3a72f}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 500px at 50% -10%,#16262a,var(--bg));color:var(--silver);font-family:system-ui,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1000px;margin:auto;padding:0 16px}
+header{text-align:center;padding:24px 0 8px}
+header .logo{background:#fff;border-radius:18px;display:inline-block;padding:8px 20px;box-shadow:0 0 0 2px var(--gold),0 10px 40px #0fb5b533}
+header img{height:150px;display:block}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}
+input.s{flex:1;min-width:200px;background:var(--card);border:1px solid var(--line);color:var(--silver);padding:12px 14px;border-radius:12px;font-size:16px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--card);border:1px solid var(--line);color:var(--silver);padding:10px 16px;border-radius:99px;cursor:pointer;font-size:15px}
+.chip.on{background:linear-gradient(135deg,var(--teal),#0a7f84);border-color:var(--teal);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{background:linear-gradient(180deg,#1a2126,var(--card));border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.ph{height:150px;display:grid;place-items:center;font-size:64px;font-weight:900;color:var(--teal);background:#0c1114}
+.ph img{width:100%;height:100%;object-fit:cover}
+.body{padding:14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.cat{font-size:12px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase}
+.name{font-weight:600;line-height:1.3}.price{font-size:22px;font-weight:800;color:#fff;margin-top:auto}
+.stock{font-size:13px;color:var(--mute)}.low{color:var(--gold)}
+a.btn{display:block;text-align:center;text-decoration:none;background:linear-gradient(135deg,var(--teal),#0a7f84);color:#fff;padding:12px;border-radius:12px;font-weight:700}
+a.btn.out{background:transparent;border:1px solid var(--gold);color:var(--gold)}
+section{margin:44px 0}h2{letter-spacing:.2em;text-transform:uppercase;font-size:15px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:8px}
+.txt{white-space:pre-line;line-height:1.6}
+footer{text-align:center;color:var(--mute);padding:30px 0;font-size:13px;letter-spacing:.15em}
+</style></head><body><div class="wrap">
+<header><div class="logo"><img src="logo.png" alt="Proteína"></div></header>
+<div class="bar"><input class="s" id="q" placeholder="Buscar producto…"></div>
+<div class="chips" id="chips"></div><br>
+<div class="grid" id="grid"></div>
+<section><h2>Sobre nosotros</h2><p class="txt" id="about"></p></section>
+<section><h2>Información</h2><p class="txt" id="info"></p></section>
+<footer>NUTRICIÓN · RENDIMIENTO</footer></div>
+<script>
+let D={products:[]},cat='Todos';
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const money=n=>'$'+Number(n).toLocaleString('es-AR');
+const wa=t=>'https://wa.me/'+D.whatsapp+'?text='+encodeURIComponent(t);
+function render(){
+  const cats=['Todos',...new Set(D.products.map(p=>p.cat).filter(Boolean))];
+  $('chips').replaceChildren(...cats.map(c=>{const b=el('button','chip'+(c===cat?' on':''),c);b.onclick=()=>{cat=c;render()};return b}));
+  const q=$('q').value.toLowerCase();
+  const list=D.products.filter(p=>(cat==='Todos'||p.cat===cat)&&p.name.toLowerCase().includes(q));
+  $('grid').replaceChildren(...list.map(p=>{
+    const c=el('div','card'),ph=el('div','ph');
+    if(p.img){const i=el('img');i.src=p.img;i.alt=p.name;ph.append(i)}else ph.textContent='P';
+    const b=el('div','body'),out=p.stock<=0;
+    b.append(el('div','cat',p.cat),el('div','name',p.name),
+      el('div','stock'+(!out&&p.stock<=3?' low':''),out?'Sin stock':p.stock<=3?'¡Últimas '+p.stock+' unidades!':'Disponible'),
+      el('div','price',money(p.price)));
+    const a=el('a','btn'+(out?' out':''),out?'Encargar':'Pedir por WhatsApp');
+    a.href=wa((out?'Hola! Quiero encargar: ':'Hola! Quiero pedir: ')+p.name+' ('+money(p.price)+')');a.target='_blank';
+    b.append(a);c.append(ph,b);return c}));
+  $('about').textContent=D.about||'';$('info').textContent=D.info||'';
+}
+$('q').oninput=render;
+fetch('/api/data').then(r=>r.json()).then(d=>{D=d;render()});
+</script></body></html>
